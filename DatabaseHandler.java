@@ -1,6 +1,8 @@
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class DatabaseHandler 
@@ -14,30 +16,27 @@ public class DatabaseHandler
 	
 	public DatabaseHandler() throws ClassNotFoundException
 	{
-		System.out.println("Generic DbHand");
 		database= new Database();
 		database.onCreate("test.db");
 		
 	}
 	public DatabaseHandler(Database database)
 	{
-		System.out.println("Error here");
-		this.database.onCreate("random.db");
-		System.out.println("here");
 		this.database.connection = database.connection;
 		this.database.statement = database.statement;
-		System.out.println("here");
 	}
 	
 	public void onCreate() throws SQLException
 	{
 		String drop = "DROP TABLE IF EXISTS " + tableName;
 		this.database.statement.executeUpdate(drop);
-		String sql = "CREATE TABLE " + tableName + 
+		
+		String createTable = "CREATE TABLE " + tableName + 
 				"(" + keyUsername + " " +  "TEXT," + 
 				keyIp + " " + "TEXT," + 
 				keyStatus + " " + "INTEGER" + ")";
-		this.database.statement.executeUpdate(sql);
+		
+		this.database.statement.executeUpdate(createTable);
 	}
 	
 	public void addUser(User user) throws SQLException
@@ -46,30 +45,57 @@ public class DatabaseHandler
 			PreparedStatement insertUser = this.database.connection.prepareStatement(
 					"INSERT INTO "+ tableName + "(" + keyUsername + "," + keyIp + ","
 					+ keyStatus + ") VALUES (?,?,?)");
+			
 			insertUser.setString(1, user.getUsername());
 			insertUser.setString(2, user.getIp());
 			insertUser.setInt(3, user.getStatus());
-			insertUser.executeUpdate();
 			
-			//insertUser.close();
-			System.out.println("Successful user add");
+			insertUser.executeUpdate();
+			insertUser.close();
 	}
 	
-	public String getUser (String username) throws SQLException
+	public User getUser (String username) throws SQLException
 	{
-		System.out.println("Getting user " + username);
-		String getUser = "SELECT * " +  "FROM " + tableName
-					+ " WHERE " + keyUsername + " LIKE " + username;
-		System.out.println ( "userString: " + getUser );
-		ResultSet rs = this.database.statement.executeQuery(getUser);
 		String uName = null;
+		String uIp = null;
+		int uStatusInt = 0;
+		String getUser = "SELECT * " +  "FROM " + tableName
+					+ " WHERE " + keyUsername + "=\"" + username + "\"";
+
+		ResultSet rs = this.database.statement.executeQuery(getUser);
 		while (rs.next())
 		{
-			uName = rs.getString("username");
-			System.out.println(uName);
-			//return uName;
+			uName = rs.getString(keyUsername);
+			uIp = rs.getString (keyIp);
+			uStatusInt = rs.getInt(keyStatus);
 		}
-		return uName;
+		boolean uStatusBool = (uStatusInt != 0)? true : false;
+		User user = new User(uName,uIp,uStatusBool);
+		return user;
+		
+	}
+	
+	public List<User> getAllUsers () throws SQLException
+	{
+		List<User> allUsers = new ArrayList<User>();
+		User user;
+		String uName = null;
+		String uIp = null;
+		int uStatusInt = 0;
+		
+		String getAllUsers = "SELECT * FROM " + tableName ;
+		ResultSet rs = this.database.statement.executeQuery(getAllUsers);
+		while (rs.next())
+		{
+			uName = rs.getString(keyUsername);
+			uIp = rs.getString (keyIp);
+			uStatusInt = rs.getInt(keyStatus);
+			boolean uStatusBool = (uStatusInt != 0) ? true: false ;
+			user = new User(uName,uIp,uStatusBool);
+			
+			allUsers.add(user);
+		}
+		return allUsers;
 		
 	}
 	public static void main(String arg[])
@@ -79,26 +105,12 @@ public class DatabaseHandler
 		boolean available = true;
 		try
 		{
-			User test = new User(username,ip,available);
-			System.out.println(test.getUsername());
-			System.out.println("Sucessful creation of database");
-			System.out.println("Sucessful creation of database1");
-
+			User alice = new User(username,ip,available);
 			DatabaseHandler dbHand = new DatabaseHandler();
 			dbHand.onCreate();
-			System.out.println("Successful Dbhandler");
-			dbHand.addUser(test);
-			System.out.println("Sucessful addition of user");
-
-			String alice = dbHand.getUser("Alice");
-			System.out.println("Alice: " + alice);
-			ResultSet qu = dbHand.database.statement.executeQuery(
-							"SELECT * from userList");
-			while (qu.next())
-			{
-				String uname = qu.getString("username");
-				System.out.println("username " + uname);
-			}
+			dbHand.addUser(alice);
+			dbHand.addUser(new User("Bob","182.1.1",true));
+			List<User> allUsers = dbHand.getAllUsers();
 		}
 		catch (Exception e)
 		{
