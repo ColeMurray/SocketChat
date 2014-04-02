@@ -98,6 +98,30 @@ public class DatabaseHandler
 		return allUsers;
 		
 	}
+	
+	public void deleteUser (User user) throws SQLException
+	{
+		String deleteUser = "DELETE FROM " + tableName + " WHERE " 
+				+keyUsername + "=\"" + user.getUsername() + "\"" ;
+		this.database.statement.executeUpdate(deleteUser);
+	}
+	public void updateUser (User user) throws SQLException
+	{
+		
+		PreparedStatement updateUser = this.database.connection.prepareStatement(
+				"UPDATE "+ tableName + " set " + keyUsername + "=? , " +
+				keyIp + "=? , " + keyStatus + "=? WHERE " + keyUsername + 
+				"=\"" + user.getUsername() + "\"") ;
+		
+		updateUser.setString(1,user.getUsername());
+		updateUser.setString(2, user.getIp());
+		updateUser.setInt(3, user.getStatus());
+		
+		updateUser.executeUpdate();
+		
+		
+		
+	}
 	public static void main(String arg[])
 	{
 		String username = "Alice";
@@ -110,7 +134,15 @@ public class DatabaseHandler
 			dbHand.onCreate();
 			dbHand.addUser(alice);
 			dbHand.addUser(new User("Bob","182.1.1",true));
+			dbHand.deleteUser(alice);
+			//dbHand.updateUser(new User("Bob", "182.1.1",false));
 			List<User> allUsers = dbHand.getAllUsers();
+
+			for (int i = 0 ; i < allUsers.size(); i++)
+			{
+				System.out.println(allUsers.get(i).getUsername());
+				System.out.println(allUsers.get(i).getStatus());
+			}
 		}
 		catch (Exception e)
 		{
